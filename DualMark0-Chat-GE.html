@@ -133,6 +133,124 @@
       .svg-container{width:120px;height:120px}
     }
   </style>
+<style>
+/* ---------- MANTRA UPGRADE (bloco único) ---------- */
+:root{
+  --mantra-min-w: 260px;
+  --mantra-grad: linear-gradient(135deg, rgba(0,255,255,0.12), rgba(120,0,255,0.08));
+  --mantra-glow: 0 10px 30px rgba(0,255,255,0.06);
+  --mantra-text: #dcefff;
+  --mantra-accent: #ffd700;
+  --mantra-radius: 100px;
+  --mantra-padding: 12px 28px;
+  --mantra-transition: 0.55s cubic-bezier(.16,1,.3,1);
+}
+
+/* container */
+#mantra-toggle{
+  position: fixed !important;
+  left: 50% !important;
+  transform: translateX(-50%) translateY(0) !important;
+  bottom: 28px !important;
+  z-index: 100000 !important;
+  min-width: var(--mantra-min-w) !important;
+  padding: var(--mantra-padding) !important;
+  border-radius: var(--mantra-radius) !important;
+  display:flex; gap:12px; align-items:center; justify-content:center;
+  cursor:pointer !important;
+  user-select:none !important;
+  -webkit-user-select:none !important;
+  background: var(--mantra-grad) !important;
+  border: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: var(--mantra-glow) !important;
+  backdrop-filter: blur(10px) saturate(120%) !important;
+  -webkit-backdrop-filter: blur(10px) saturate(120%) !important;
+  transition: transform var(--mantra-transition), box-shadow var(--mantra-transition), background var(--mantra-transition), border-color var(--mantra-transition) !important;
+  font-family: 'Montserrat', system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  color:var(--mantra-text) !important;
+  outline: none;
+}
+
+/* small gear hint */
+#mantra-hint{
+  font-size:14px; opacity:0.7; align-self:center;
+  margin-left:6px; display:inline-block; transform:translateY(1px);
+}
+
+/* text */
+#mantra-text{
+  font-size:0.86rem; color:var(--mantra-text); line-height:1; font-style:italic;
+  text-align:center; white-space:nowrap; transition: all 0.35s ease;
+}
+
+/* hover / active */
+#mantra-toggle:hover{ transform: translateX(-50%) translateY(-3px); box-shadow: 0 18px 45px rgba(0,255,255,0.09); border-color: rgba(255,255,255,0.14); }
+#mantra-toggle:active{ transform: translateX(-50%) translateY(0); }
+
+/* collapsed / zen */
+#mantra-toggle.collapsed{
+  --mantra-grad: linear-gradient(90deg, rgba(255,215,0,0.12), rgba(255,120,0,0.06));
+  border-color: rgba(255,215,0,0.26);
+  box-shadow: 0 0 28px rgba(255,215,0,0.08);
+  padding: 10px 44px !important;
+}
+#mantra-toggle.collapsed #mantra-text{ font-weight:700; letter-spacing:3px; color:var(--mantra-accent); text-shadow:0 0 8px rgba(255,215,0,0.18); font-style:normal; }
+
+/* micro-animate when long-press starts */
+#mantra-toggle.longpressing{ transform: translateX(-50%) scale(0.98); box-shadow: 0 6px 24px rgba(0,0,0,0.35) inset; filter:brightness(0.98); }
+
+/* fade animations */
+.fade-out{ opacity:0; transform: translateY(6px) scale(.995); transition: all .28s ease; }
+.fade-in{ opacity:1; transform: translateY(0); transition: all .28s ease; }
+
+/* Settings panel (pops near the button) */
+#mantra-settings-panel{
+  position: fixed; z-index:100001; left:50%; transform:translateX(-50%); bottom:86px;
+  min-width:320px; max-width:420px; width:clamp(320px,42vw,420px);
+  background: linear-gradient(180deg, rgba(12,12,12,0.92), rgba(18,18,18,0.96));
+  border-radius:12px; padding:12px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); border:1px solid rgba(255,255,255,0.04);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display:none; flex-direction:column; gap:10px;
+}
+#mantra-settings-panel.active{ display:flex; animation: fadePanel .28s cubic-bezier(.2,.9,.35,1); }
+@keyframes fadePanel{ from{ opacity:0; transform:translateX(-50%) translateY(10px)} to{ opacity:1; transform:translateX(-50%) translateY(0)} }
+
+/* panel content */
+.mantra-row{ display:flex; gap:8px; align-items:center; }
+.mantra-col{ display:flex; flex-direction:column; gap:6px; flex:1; }
+.mantra-label{ font-size:0.78rem; color:#9bb; }
+.mantra-input, .mantra-select{ background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); color:#eaf6ff; padding:8px; border-radius:8px; font-size:0.9rem; outline:none }
+.mantra-actions{ display:flex; gap:8px; justify-content:flex-end; margin-top:6px; }
+.mantra-btn{ padding:8px 10px; border-radius:8px; border:none; cursor:pointer; font-weight:700; font-size:0.9rem }
+.mantra-btn.prim{ background:linear-gradient(90deg,#0ff,#8a2be2); color:#001; }
+.mantra-btn.sec{ background:rgba(255,255,255,0.04); color:#dfe; }
+
+/* localStorage/IndexedDB debug area */
+.mantra-meta{ font-size:0.78rem; color:#9aa; max-height:160px; overflow:auto; padding:8px; border-radius:8px; background:rgba(255,255,255,0.02); border:1px dashed rgba(255,255,255,0.02) }
+
+/* dashboard modal (full screen overlay) */
+#mantra-dashboard{
+  position:fixed; inset:0; display:none; z-index:100005; align-items:center; justify-content:center;
+  background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8));
+}
+#mantra-dashboard.active{ display:flex; }
+#mantra-dashboard .dash-box{ width:92%; max-width:980px; max-height:86vh; overflow:auto; border-radius:12px; padding:16px; background:linear-gradient(180deg, #0b0b0b, #121212); border:1px solid rgba(255,255,255,0.04); box-shadow:0 30px 80px rgba(0,0,0,0.7) }
+.dash-header{ display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:10px }
+.dash-list{ display:flex; flex-direction:column; gap:8px; }
+.dash-item{ padding:10px; border-radius:8px; background:rgba(255,255,255,0.02); display:flex; justify-content:space-between; gap:10px; align-items:flex-start }
+.dash-item .title{ font-weight:700; color:#dff; }
+.dash-item .meta{ font-size:0.82rem; color:#9bb; }
+.dash-actions{ display:flex; gap:8px }
+.dash-actions button{ padding:6px 8px; border-radius:6px; border:none; cursor:pointer; background:rgba(255,255,255,0.04); color:#fff }
+
+/* responsive tweak */
+@media (max-width:520px){
+  #mantra-settings-panel{ left:50%; transform:translateX(-50%); bottom:96px; width:92%; }
+  #mantra-toggle{ min-width:220px; padding:10px 18px; }
+}
+</style>
+
+  
 </head>
 <body>
   <div id="particles-js"><canvas class="particles-js-canvas-el"></canvas></div>
@@ -274,6 +392,526 @@
       </div>
     </div>
   </div>
+<div id="mantra-toggle" aria-label="Mantra toggle" role="button" tabindex="0" title="Mantra — clique / pressione longa para ajustes">
+  <span id="mantra-text">Do seu jeito. <strong>Sempre</strong> único. <strong>Sempre</strong> seu.</span>
+  <span id="mantra-hint" aria-hidden="true">⚙︎</span>
+</div>
+<script>
+/* ---------- MANTRA: visual upgrade + long-press HAPTICS + settings + dashboard ---------- */
+(function () {
+  const MANTRA = document.getElementById('mantra-toggle');
+  const TXT = document.getElementById('mantra-text');
+
+  if (!MANTRA || !TXT) return;
+
+  // default settings (persisted in localStorage under 'mantra_settings')
+  const DEFAULTS = {
+    gradient: 'linear-gradient(135deg, rgba(0,255,255,0.12), rgba(120,0,255,0.08))',
+    glow: '0 10px 30px rgba(0,255,255,0.06)',
+    minWidth: '260px',
+    padding: '12px 28px',
+    radius: '100px',
+    haptics: true,
+    position: 'bottom-center' // options: bottom-center, bottom-left, bottom-right
+  };
+
+  // apply saved settings
+  function loadSettings() {
+    try {
+      const raw = localStorage.getItem('mantra_settings');
+      return raw ? Object.assign({}, DEFAULTS, JSON.parse(raw)) : Object.assign({}, DEFAULTS);
+    } catch (e) {
+      return Object.assign({}, DEFAULTS);
+    }
+  }
+  let settings = loadSettings();
+
+  function saveSettings() {
+    localStorage.setItem('mantra_settings', JSON.stringify(settings));
+  }
+
+  // apply CSS variables to the element
+  function applyVisuals() {
+    MANTRA.style.background = settings.gradient;
+    MANTRA.style.boxShadow = settings.glow;
+    MANTRA.style.minWidth = settings.minWidth;
+    MANTRA.style.padding = settings.padding;
+    MANTRA.style.borderRadius = settings.radius;
+    // position
+    MANTRA.style.left = '50%';
+    MANTRA.style.transform = 'translateX(-50%)';
+    MANTRA.style.right = 'auto';
+    MANTRA.style.bottom = '28px';
+    if (settings.position === 'bottom-left') {
+      MANTRA.style.left = '24px';
+      MANTRA.style.transform = 'none';
+    } else if (settings.position === 'bottom-right') {
+      MANTRA.style.left = 'auto';
+      MANTRA.style.right = '24px';
+      MANTRA.style.transform = 'none';
+    }
+  }
+
+  applyVisuals();
+
+  // simple haptics shim
+  function haptic(pattern) {
+    try {
+      if (!settings.haptics) return;
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern || 20);
+      }
+      // iOS Haptics not exposed via JS — vibration works on Android/Chrome.
+    } catch (e) { /* silent */ }
+  }
+
+  // basic click toggle (keeps previous behavior: collapsed -> zen)
+  let collapsed = false;
+  MANTRA.addEventListener('click', (ev) => {
+    // avoid firing click if it was longpress (we mark it)
+    if (MANTRA._suppressClick) { MANTRA._suppressClick = false; return; }
+
+    collapsed = !collapsed;
+    MANTRA.classList.toggle('collapsed', collapsed);
+    document.body.classList.toggle('zen-mode', collapsed);
+    swapText(collapsed ? 'USE · TRANSFORME · DEVOLVA' : 'Do seu jeito. <strong>Sempre</strong> único. <strong>Sempre</strong> seu.');
+    haptic(18);
+  });
+
+  function swapText(html) {
+    TXT.classList.add('fade-out');
+    setTimeout(()=> {
+      TXT.innerHTML = html;
+      TXT.classList.remove('fade-out');
+      TXT.classList.add('fade-in');
+      setTimeout(()=> TXT.classList.remove('fade-in'), 320);
+    }, 260);
+  }
+
+  /* ---------- LONG PRESS to open button adjustments ---------- */
+  let longPressTimer = null;
+  const LONG_PRESS_MS = 600;
+  function startLongPress(e) {
+    if (longPressTimer) clearTimeout(longPressTimer);
+    MANTRA.classList.add('longpressing');
+    longPressTimer = setTimeout(()=> {
+      MANTRA._suppressClick = true; // prevent the click handler firing
+      openSettingsPanel();
+      MANTRA.classList.remove('longpressing');
+      haptic([35,15,35]);
+    }, LONG_PRESS_MS);
+  }
+  function cancelLongPress() {
+    if (longPressTimer) clearTimeout(longPressTimer);
+    longPressTimer = null;
+    MANTRA.classList.remove('longpressing');
+  }
+  MANTRA.addEventListener('pointerdown', startLongPress);
+  MANTRA.addEventListener('touchstart', startLongPress);
+  MANTRA.addEventListener('pointerup', cancelLongPress);
+  MANTRA.addEventListener('pointercancel', cancelLongPress);
+  MANTRA.addEventListener('touchend', cancelLongPress);
+  MANTRA.addEventListener('mouseleave', cancelLongPress);
+
+  /* ---------- SETTINGS PANEL (created once) ---------- */
+  let panel = document.getElementById('mantra-settings-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'mantra-settings-panel';
+    panel.innerHTML = `
+      <div class="mantra-row">
+        <div class="mantra-col">
+          <div class="mantra-label">Visual</div>
+          <select id="mantra-grad-presets" class="mantra-select">
+            <option value="preset-1">Ciano → Violeta (padrão)</option>
+            <option value="preset-2">Dourado — Acorde Zen</option>
+            <option value="preset-3">Roxo Elétrico</option>
+            <option value="custom">Personalizado (usar campo abaixo)</option>
+          </select>
+          <input id="mantra-custom-grad" class="mantra-input" placeholder="ex: linear-gradient(90deg,#0ff,#8a2be2)" />
+        </div>
+      </div>
+
+      <div class="mantra-row">
+        <div class="mantra-col">
+          <div class="mantra-label">Tamanho / raio</div>
+          <input id="mantra-minw" class="mantra-input" placeholder="min-width (ex: 260px)" />
+          <input id="mantra-radius" class="mantra-input" placeholder="border-radius (ex: 100px)" />
+        </div>
+        <div style="width:120px;">
+          <div class="mantra-label">Posição</div>
+          <select id="mantra-position" class="mantra-select">
+            <option value="bottom-center">Centro</option>
+            <option value="bottom-left">Esquerda</option>
+            <option value="bottom-right">Direita</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mantra-row">
+        <div class="mantra-col">
+          <label class="mantra-label">Haptics / Vibração</label>
+          <select id="mantra-haptics" class="mantra-select">
+            <option value="true">Ativado</option>
+            <option value="false">Desativado</option>
+          </select>
+        </div>
+        <div style="width:120px;">
+          <label class="mantra-label">Painel</label>
+          <button id="mantra-open-dashboard" class="mantra-btn sec">Dashboard</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="mantra-label">Configurações detectadas (localStorage / IndexedDB)</div>
+        <div id="mantra-meta" class="mantra-meta">Detectando…</div>
+      </div>
+
+      <div class="mantra-actions">
+        <button id="mantra-reset" class="mantra-btn sec">Reset</button>
+        <button id="mantra-save" class="mantra-btn prim">Salvar</button>
+      </div>
+    `;
+    document.body.appendChild(panel);
+  }
+
+  const metaEl = panel.querySelector('#mantra-meta');
+  const presetEl = panel.querySelector('#mantra-grad-presets');
+  const customGradEl = panel.querySelector('#mantra-custom-grad');
+  const minwEl = panel.querySelector('#mantra-minw');
+  const radEl = panel.querySelector('#mantra-radius');
+  const posEl = panel.querySelector('#mantra-position');
+  const hapticsEl = panel.querySelector('#mantra-haptics');
+  const saveBtn = panel.querySelector('#mantra-save');
+  const resetBtn = panel.querySelector('#mantra-reset');
+  const dashBtn = panel.querySelector('#mantra-open-dashboard');
+
+  function openSettingsPanel() {
+    // fill with current settings
+    if (settings.gradient.includes('0ff') || settings.gradient.includes('#0ff')) presetEl.value = 'preset-1';
+    else if (settings.gradient.includes('255,215,0') || settings.gradient.includes('ffd700')) presetEl.value = 'preset-2';
+    else if (settings.gradient.includes('8a2be2') || settings.gradient.includes('purple')) presetEl.value = 'preset-3';
+    else presetEl.value = 'custom';
+    customGradEl.value = settings.gradient;
+    minwEl.value = settings.minWidth;
+    radEl.value = settings.radius;
+    posEl.value = settings.position;
+    hapticsEl.value = String(!!settings.haptics);
+
+    // detect storage
+    detectStorageInfo().then(info => {
+      metaEl.innerHTML = info;
+    }).catch(e => { metaEl.innerText = 'Erro ao detectar storage.'; });
+
+    panel.classList.add('active');
+    // close on click outside
+    setTimeout(()=> {
+      const outside = (ev) => {
+        if (!panel.contains(ev.target) && ev.target !== MANTRA) {
+          panel.classList.remove('active');
+          document.removeEventListener('pointerdown', outside);
+        }
+      };
+      document.addEventListener('pointerdown', outside);
+    }, 0);
+  }
+
+  // preset handling
+  presetEl.addEventListener('change', () => {
+    const v = presetEl.value;
+    if (v === 'preset-1') customGradEl.value = 'linear-gradient(135deg, rgba(0,255,255,0.12), rgba(120,0,255,0.08))';
+    else if (v === 'preset-2') customGradEl.value = 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,150,40,0.06))';
+    else if (v === 'preset-3') customGradEl.value = 'linear-gradient(135deg, rgba(138,43,226,0.16), rgba(58,12,160,0.06))';
+    else if (v === 'custom') { /* keep custom value */ }
+  });
+
+  // save -> persist and apply
+  saveBtn.addEventListener('click', () => {
+    settings.gradient = customGradEl.value || DEFAULTS.gradient;
+    settings.minWidth = minwEl.value || DEFAULTS.minWidth;
+    settings.radius = radEl.value || DEFAULTS.radius;
+    settings.position = posEl.value || DEFAULTS.position;
+    settings.haptics = (hapticsEl.value === 'true');
+    saveSettings();
+    applyVisuals();
+    panel.classList.remove('active');
+    haptic(20);
+    // quick visual pulse to show change
+    MANTRA.animate([{ transform: 'translateX(-50%) scale(0.98)' }, { transform: 'translateX(-50%) scale(1)' }], { duration: 260, easing: 'cubic-bezier(.2,.9,.3,1)' });
+  });
+
+  resetBtn.addEventListener('click', () => {
+    settings = Object.assign({}, DEFAULTS);
+    saveSettings();
+    applyVisuals();
+    panel.classList.remove('active');
+    haptic([30,10,30]);
+  });
+
+  dashBtn.addEventListener('click', () => {
+    openDashboard();
+  });
+
+  /* ---------- STORAGE DETECTION ---------- */
+  async function detectStorageInfo() {
+    // localStorage keys (mask keys possibly sensitive)
+    const lsKeys = Object.keys(localStorage).filter(k => k.startsWith('di_') || k.toLowerCase().includes('mantra') || k.toLowerCase().includes('cristal') || k.toLowerCase().includes('training') ).sort();
+    const lsPreview = lsKeys.length ? lsKeys.map(k => {
+      let v = localStorage.getItem(k);
+      // mask API keys
+      if (/key|api|sk/i.test(k)) {
+        const visible = v ? v.slice(-4) : '';
+        return `<div><strong>${k}</strong>: <em>●●●●${visible.length?(' · ' + visible):''}</em></div>`;
+      }
+      // short preview for large content
+      if (v && v.length > 220) v = v.slice(0,120) + '… (' + v.length + ' chars)';
+      return `<div><strong>${k}</strong>: <span style="color:#cfe">${escapeHtml(String(v))}</span></div>`;
+    }).join('') : '<div>Nenhuma key relacionada encontrada no localStorage.</div>';
+
+    // indexedDB: try to open 'di_dashboard' and list object stores and counts
+    const idbInfo = await probeIndexedDB('di_dashboard').catch(e => ({ error: true }));
+    let idbPreview = '';
+    if (idbInfo && idbInfo.error) idbPreview = '<div>IndexedDB: não disponível ou sem dados.</div>';
+    else {
+      idbPreview = `<div><strong>IndexedDB</strong> — DB: ${escapeHtml(idbInfo.name)} · v${idbInfo.version}</div>`;
+      if (idbInfo.stores && idbInfo.stores.length) {
+        idbPreview += '<div style="margin-top:6px"><em>Stores:</em></div>' + idbInfo.stores.map(s => `<div>• ${s.name} — ${s.count} entradas</div>`).join('');
+      } else idbPreview += '<div>Sem objectStores detectadas.</div>';
+    }
+
+    return `<div style="display:flex;gap:12px"><div style="flex:1">${lsPreview}</div><div style="width:1px;background:rgba(255,255,255,0.02)"></div><div style="flex:1">${idbPreview}</div></div>`;
+  }
+
+  // small helper
+  function escapeHtml(s){ return String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+  // probe IndexedDB: open DB and get counts for known stores (conversations, settings)
+  function probeIndexedDB(dbName) {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName);
+      let resolved = false;
+      req.onerror = () => { if (!resolved) { resolved = true; reject({ error: true }); } };
+      req.onsuccess = () => {
+        const db = req.result;
+        const stores = [];
+        const txRead = db.transaction(db.objectStoreNames, 'readonly');
+        const doCounts = [];
+        for (let i=0;i<db.objectStoreNames.length;i++){
+          const name = db.objectStoreNames[i];
+          try {
+            const st = txRead.objectStore(name);
+            const countReq = st.count();
+            doCounts.push(new Promise((res) => countReq.onsuccess = () => res({ name, count: countReq.result })));
+          } catch(e) {
+            doCounts.push(Promise.resolve({ name, count: '—' }));
+          }
+        }
+        Promise.all(doCounts).then(results => {
+          if (!resolved) { resolved = true; resolve({ name: db.name, version: db.version, stores: results }); db.close(); }
+        }).catch(() => { if (!resolved) { resolved = true; reject({ error: true }); db.close(); }});
+      };
+      // If DB not exist, onsuccess still fires with version 1 but no stores
+      req.onupgradeneeded = (e) => {
+        // do not create stores here; just close early
+      };
+    });
+  }
+
+  /* ---------- DASHBOARD (multi conversas) ---------- */
+  let dashOverlay = null;
+  function ensureDashboardOverlay() {
+    if (dashOverlay) return dashOverlay;
+    dashOverlay = document.createElement('div');
+    dashOverlay.id = 'mantra-dashboard';
+    dashOverlay.innerHTML = `
+      <div class="dash-box">
+        <div class="dash-header">
+          <div>
+            <strong style="font-size:1.05rem">Dashboard · Multi-Conversas</strong><div style="font-size:0.85rem;color:#9bb">Conversations stored in IndexedDB / localStorage</div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <button id="mantra-refresh-dash" class="mantra-btn sec">Atualizar</button>
+            <button id="mantra-close-dash" class="mantra-btn sec">Fechar</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <div style="width:46%; min-width:220px">
+            <div style="font-size:0.9rem;color:#9bb;margin-bottom:8px">IndexedDB: 'di_dashboard' (conversations)</div>
+            <div id="dash-idb-list" class="dash-list"></div>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:0.9rem;color:#9bb;margin-bottom:8px">localStorage: keys relevantes</div>
+            <div id="dash-ls-list" class="dash-list"></div>
+          </div>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(dashOverlay);
+
+    dashOverlay.querySelector('#mantra-close-dash').addEventListener('click', () => dashOverlay.classList.remove('active'));
+    dashOverlay.querySelector('#mantra-refresh-dash').addEventListener('click', populateDashboard);
+    dashOverlay.addEventListener('click', (e) => { if (e.target === dashOverlay) dashOverlay.classList.remove('active'); });
+    return dashOverlay;
+  }
+
+  async function openDashboard() {
+    const ov = ensureDashboardOverlay();
+    ov.classList.add('active');
+    await populateDashboard();
+  }
+
+  async function populateDashboard() {
+    const ov = ensureDashboardOverlay();
+    const idbList = ov.querySelector('#dash-idb-list');
+    const lsList = ov.querySelector('#dash-ls-list');
+    idbList.innerHTML = '<div class="small" style="color:#9aa">Carregando IndexedDB…</div>';
+    lsList.innerHTML = '<div class="small" style="color:#9aa">Carregando localStorage…</div>';
+
+    // list localStorage keys we care about
+    const lsKeys = Object.keys(localStorage).filter(k => k.startsWith('di_') || /cristal|training|assistant|conversation/i.test(k));
+    if (!lsKeys.length) {
+      lsList.innerHTML = '<div class="small" style="color:#9bb">Nenhuma key relevante encontrada no localStorage.</div>';
+    } else {
+      lsList.innerHTML = '';
+      lsKeys.forEach(k => {
+        const val = localStorage.getItem(k);
+        const short = (val && val.length>220) ? (val.slice(0,160)+'…') : (val||'');
+        const item = document.createElement('div');
+        item.className = 'dash-item';
+        item.innerHTML = `<div><div class="title">${escapeHtml(k)}</div><div class="meta">${escapeHtml(short)}</div></div>
+                          <div class="dash-actions">
+                            <button data-k="${escapeHtml(k)}" class="dash-copy">Copiar</button>
+                            <button data-k="${escapeHtml(k)}" class="dash-export">Export</button>
+                            <button data-k="${escapeHtml(k)}" class="dash-del">Apagar</button>
+                          </div>`;
+        lsList.appendChild(item);
+      });
+
+      // actions
+      lsList.querySelectorAll('.dash-copy').forEach(b => b.addEventListener('click', (e) => {
+        const k = e.currentTarget.dataset.k;
+        navigator.clipboard.writeText(localStorage.getItem(k) || '');
+      }));
+      lsList.querySelectorAll('.dash-export').forEach(b => b.addEventListener('click', (e) => {
+        const k = e.currentTarget.dataset.k;
+        const data = localStorage.getItem(k) || '';
+        const blob = new Blob([data], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `${k}_${Date.now()}.txt`; a.click(); URL.revokeObjectURL(url);
+      }));
+      lsList.querySelectorAll('.dash-del').forEach(b => b.addEventListener('click', (e) => {
+        const k = e.currentTarget.dataset.k;
+        if (!confirm('Apagar localStorage key: ' + k + '?')) return;
+        localStorage.removeItem(k);
+        populateDashboard();
+      }));
+    }
+
+    // IndexedDB: try to open DB and read 'conversations' store (if exists)
+    try {
+      const res = await openIndexedDBAll('di_dashboard', 'conversations');
+      idbList.innerHTML = '';
+      if (!res || !res.length) {
+        idbList.innerHTML = '<div class="small" style="color:#9bb">Nenhuma conversa encontrada na IndexedDB (store: conversations).</div>';
+      } else {
+        res.forEach(r => {
+          const item = document.createElement('div');
+          item.className = 'dash-item';
+          const title = r.title || ('Conversa ' + (r.id||r._id||Date.now()));
+          const meta = (r.at ? new Date(r.at).toLocaleString() : '');
+          const excerpt = (r.content && r.content.length>220) ? r.content.slice(0,220)+'…' : (r.content||'');
+          item.innerHTML = `<div><div class="title">${escapeHtml(title)}</div><div class="meta">${escapeHtml(meta)}</div><div style="margin-top:6px">${escapeHtml(excerpt)}</div></div>
+            <div class="dash-actions">
+              <button data-id="${r.id||r._id||r.key}" class="dash-copy">Copiar</button>
+              <button data-id="${r.id||r._id||r.key}" class="dash-export">Export</button>
+              <button data-id="${r.id||r._id||r.key}" class="dash-del">Apagar</button>
+            </div>`;
+          idbList.appendChild(item);
+        });
+
+        // attach actions
+        idbList.querySelectorAll('.dash-copy').forEach(b => b.addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          const rec = res.find(x=>String(x.id||x._id||x.key)===String(id));
+          if (rec && rec.content) await navigator.clipboard.writeText(rec.content);
+        }));
+        idbList.querySelectorAll('.dash-export').forEach(b => b.addEventListener('click', (e) => {
+          const id = e.currentTarget.dataset.id;
+          const rec = res.find(x=>String(x.id||x._id||x.key)===String(id));
+          if (!rec) return;
+          const blob = new Blob([rec.content || ''], { type: 'text/plain;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = `di_conv_${id || Date.now()}.txt`; a.click(); URL.revokeObjectURL(url);
+        }));
+        idbList.querySelectorAll('.dash-del').forEach(b => b.addEventListener('click', async (e) => {
+          const id = e.currentTarget.dataset.id;
+          if (!confirm('Apagar item da IndexedDB?')) return;
+          await deleteIndexedDBKey('di_dashboard', 'conversations', id);
+          populateDashboard();
+        }));
+      }
+    } catch (err) {
+      idbList.innerHTML = '<div class="small" style="color:#c77">Erro lendo IndexedDB.</div>';
+    }
+  }
+
+  /* ---------- small IndexedDB helpers (open read all / delete) ---------- */
+  function openIndexedDBAll(dbName, storeName) {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName);
+      req.onerror = () => resolve([]); // treat missing DB as empty
+      req.onsuccess = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(storeName)) { resolve([]); db.close(); return; }
+        const tx = db.transaction(storeName, 'readonly');
+        const st = tx.objectStore(storeName);
+        const items = [];
+        st.openCursor().onsuccess = function (evt) {
+          const cursor = evt.target.result;
+          if (cursor) { items.push(cursor.value); cursor.continue(); }
+        };
+        tx.oncomplete = () => { db.close(); resolve(items); };
+        tx.onerror = () => { db.close(); resolve([]); };
+      };
+    });
+  }
+
+  function deleteIndexedDBKey(dbName, storeName, key) {
+    return new Promise((resolve, reject) => {
+      const req = indexedDB.open(dbName);
+      req.onerror = () => resolve(false);
+      req.onsuccess = () => {
+        const db = req.result;
+        if (!db.objectStoreNames.contains(storeName)) { resolve(false); db.close(); return; }
+        const tx = db.transaction(storeName, 'readwrite');
+        const st = tx.objectStore(storeName);
+        const delReq = st.delete(key);
+        delReq.onsuccess = () => { db.close(); resolve(true); };
+        delReq.onerror = () => { db.close(); resolve(false); };
+      };
+    });
+  }
+
+  /* ---------- keyboard accessibility: open panel via keyboard (long-press emulate) ---------- */
+  MANTRA.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') MANTRA.click();
+    if (e.key === ' ' || e.key === 'Spacebar') { e.preventDefault(); MANTRA.click(); }
+    if (e.key === 'm' && (e.ctrlKey || e.metaKey)) { openSettingsPanel(); }
+  });
+
+  // expose simple API for other scripts if needed
+  window.MantraUI = {
+    openSettings: openSettingsPanel,
+    openDashboard,
+    getSettings: () => settings,
+    setSettings: (s) => { settings = Object.assign({}, settings, s); saveSettings(); applyVisuals(); }
+  };
+
+  // small initial haptic on load hint (subtle)
+  setTimeout(()=> { if (settings.haptics) haptic([8]); }, 900);
+
+})();
+</script>
 
   <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
   <script>
