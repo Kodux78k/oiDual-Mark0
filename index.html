@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Dual.Infodose Chat — v3.1 (Fixed)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&amp;display=swap" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2563eb">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+      .then(() => console.log('Service Worker Registered'));
+  }
+</script>
+  <style>
+    /* --- CORE VARIABLES & RESET --- */
+    :root{
+      --bg-dark: linear-gradient(to bottom, #000, #1a1a1a);
+      --text-dark: #fff; 
+      --primary: #111; 
+      --secondary: #5e5c5e;
+      --accent: #0ff; 
+      --gold: #ffd700; 
+      --success: #0f0;
+      --fast: 0.4s; --med: 0.8s; --slow: 1.8s;
+      
+      /* Mantra Vars */
+      --mantra-min-w: 260px;
+      --mantra-grad: linear-gradient(135deg, rgba(0,255,255,0.12), rgba(120,0,255,0.08));
+      --mantra-glow: 0 10px 30px rgba(0,255,255,0.06);
+      --mantra-text: #dcefff;
+      --mantra-accent: #ffd700;
+      --mantra-radius: 100px;
+      --mantra-padding: 12px 28px;
+    }
+    
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; min-height: 100vh; }
+    
+    body {
+      padding: 20px; background: var(--bg-dark); color: var(--text-dark);
+      font-family: 'Montserrat', sans-serif; overflow: hidden; 
+      display: flex; flex-direction: column; align-items: center;
+    }
+
+    /* --- LAYOUT ELEMENTS --- */
+    #particles-js { position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+    
+    .svg-container {
+      position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%);
+      width: 160px; height: 160px; z-index: 1; pointer-events: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .svg-container object { width: 100%; height: 100%; }
+    /* Fallback visual caso o SVG falhe */
+    .svg-fallback { 
+      width: 100px; height: 100px; border-radius: 50%; border: 2px dashed var(--accent); 
+      display: flex; align-items: center; justify-content: center; opacity: 0.3;
+    }
+
+    .top-info {
+      position: fixed; top: 18px; left: 20px; z-index: 10;
+      background: rgba(0,0,0,0.35); padding: 8px 12px; border-radius: 12px; font-size: 0.85em;
+      backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,0.05);
+      display: flex; gap: 15px; flex-wrap: wrap;
+    }
+    .top-info span { opacity: 0.9; }
+
+    /* --- RESPONSE AREA --- */
+    .response-container {
+      position: fixed; left: 20px; right: 20px; bottom: 170px; /* Mais espaço para o mantra */
+      padding: 12px; background: rgba(0,0,0,0.4); backdrop-filter: blur(10px);
+      border-radius: 20px; max-height: calc(100vh - 240px); 
+      overflow-y: auto; -webkit-overflow-scrolling: touch; z-index: 5;
+    }
+    .page { display: none; opacity: 0; transition: opacity var(--med) ease-in-out; }
+    .page.active { display: block; opacity: 1; }
+    .page.initial { text-align: center; font-size: 1.1em; padding-top: 20px; }
+    
+    .response-controls {
+      display: flex; justify-content: space-between; align-items: center; 
+      margin-top: 15px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    
+    .control-buttons { display: flex; gap: 10px; align-items: center; }
+    .control-btn {
+      background: rgba(255,255,255,0.05); padding: 6px; border-radius: 6px; 
+      cursor: pointer; transition: background var(--fast); display: flex; gap: 6px; border: none; outline: none;
+    }
+    .control-btn:hover { background: rgba(255,255,255,0.12); }
+    .control-btn svg { stroke: rgba(255,255,255,0.5); fill: none; }
+    
+    .toggle-button svg { color: #fff; stroke: rgba(255,255,255,0.3); fill: none; }
+    .toggle-button svg circle:nth-child(2) { fill: currentColor; }
+    .toggle-button.active svg { color: var(--success); }
+    
+    .pagination { display: flex; align-items: center; gap: 10px; }
+    .pagination button {
+      background: none; border: none; font-size: 1.2em; color: #6fe4fb; 
+      cursor: pointer; transition: transform var(--fast);
+    }
+    .pagination button:hover { transform: scale(1.2); }
+
+    .response-block {
+      margin: 1rem 0; padding: 1.2rem; border-radius: 12px;
+      animation: fadeIn var(--slow) ease forwards; 
+      transition: box-shadow var(--fast), transform var(--fast);
+      line-height: 1.5; position: relative; cursor: pointer; overflow: hidden; 
+      animation: pulse 6s infinite ease-in-out;
+      background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(0,0,0,0.25));
+      border: 1px solid rgba(255,255,255,0.03);
+    }
+    .response-block h3 { margin-bottom: 12px; color: var(--accent); }
+    .response-block:hover { box-shadow: 0 0 15px rgba(0,255,255,0.12); }
+    .response-block .meta { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; z-index: 5; }
+    
+    .crystal-btn {
+      background: rgba(0,0,0,0.4); border-radius: 6px; padding: 4px 8px; 
+      cursor: pointer; border: 1px solid rgba(255,255,255,0.1); color: var(--accent); 
+      font-size: 1.1em; transition: all 0.3s;
+    }
+    .crystal-btn:hover { background: rgba(0,255,255,0.1); }
+    .crystal-btn.saved { color: var(--gold); border-color: var(--gold); cursor: default; }
+
+    .response-block.clicked { animation: clickPulse var(--med) ease-out; }
+    .response-block.expanded {
+      transform: scale(1.03); background: rgba(0,0,0,0.85); z-index: 6; border: 1px solid var(--accent);
+    }
+    
+    .intro { background: linear-gradient(135deg, rgba(0,255,255,0.08), rgba(0,100,100,0.04)); border-left: 4px solid #0ff; }
+    .middle { background: linear-gradient(135deg, rgba(255,255,255,0.02), rgba(50,50,50,0.06)); border-left: 4px solid rgba(255,255,255,0.2); }
+    .ending { background: linear-gradient(135deg, rgba(255,0,255,0.06), rgba(100,0,100,0.04)); border-left: 4px solid #f0f; }
+    .footer-text { margin-top: 12px; font-size: 0.8em; text-align: center; font-style: italic; color: #888; }
+
+    /* --- INPUT AREA --- */
+    .input-container {
+      position: fixed; left: 20px; right: 20px; bottom: 96px; /* Ajustado para não bater no mantra */
+      display: flex; gap: 10px; z-index: 20; max-width: calc(100% - 40px);
+    }
+    .input-container input {
+      flex: 1; padding: 12px; border: none; border-radius: 20px; 
+      background: rgba(255,255,255,0.1); color: inherit; outline: none; 
+      font-size: 16px; transition: background var(--fast);
+      backdrop-filter: blur(5px);
+    }
+    .input-container input:focus { background: rgba(255,255,255,0.2); }
+    .input-container button {
+      width: 50px; height: 50px; flex-shrink: 0;
+      border: none; border-radius: 50%; 
+      background: linear-gradient(45deg, var(--primary), var(--secondary)); 
+      color: #fff; font-size: 1.2em; cursor: pointer; 
+      display: flex; justify-content: center; align-items: center; 
+      animation: pulse 2s infinite ease-in-out; transition: transform var(--fast);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .input-container button:hover { transform: scale(1.1); }
+
+    /* --- MODALS & PANELS --- */
+    /* Z-Index High Fix: Deve ser maior que o Mantra (100000) */
+    .modal, .panel { 
+      position: fixed; inset: 0; display: none; z-index: 200000; 
+      justify-content: center; align-items: center; 
+      backdrop-filter: blur(8px); background: rgba(0,0,0,0.7); 
+    }
+    .modal.active, .panel.active { display: flex; }
+    
+    .box {
+      background: #1a1a1a; padding: 20px; border-radius: 12px; 
+      border: 1px solid rgba(255,255,255,0.1); width: 90%; max-width: 600px; 
+      box-shadow: 0 8px 40px rgba(0,0,0,0.8); color: #fff;
+      max-height: 85vh; overflow-y: auto;
+    }
+    .box h3 { color: var(--accent); margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px; }
+    
+    .row { display: flex; gap: 10px; align-items: center; }
+    .col { display: flex; flex-direction: column; gap: 8px; }
+    
+    .input-group label { font-size: 0.85em; color: #aaa; margin-left: 4px; }
+    .input-group input[type="text"], .input-group input[type="password"], .input-group input[type="file"] {
+      width: 100%; padding: 10px; border-radius: 8px; 
+      border: 1px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.5); 
+      color: #fff; outline: none;
+    }
+    
+    .settings-actions { display: flex; gap: 10px; margin-top: 12px; justify-content: flex-end; }
+    .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 600; font-size: 0.9em; transition: 0.3s; }
+    .btn-prim { background: var(--accent); color: #000; }
+    .btn-prim:hover { box-shadow: 0 0 10px var(--accent); }
+    .btn-sec { background: rgba(255,255,255,0.1); color: #fff; }
+    .btn-sec:hover { background: rgba(255,255,255,0.2); }
+    .btn-danger { background: rgba(255,50,50,0.2); color: #ffaaaa; }
+    .btn-danger:hover { background: rgba(255,50,50,0.4); }
+    .small { font-size: 0.85em; color: #bbb; }
+
+    /* Training Library */
+    .lib-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; }
+    .lib-item { 
+      background: rgba(255,255,255,0.03); padding: 8px 12px; border-radius: 6px; 
+      display: flex; justify-content: space-between; align-items: center; 
+      border-left: 3px solid transparent;
+    }
+    .lib-item.active-training { border-left-color: var(--success); background: rgba(0,255,0,0.05); }
+    .lib-item-info { display: flex; flex-direction: column; }
+    .lib-item-name { font-weight: bold; font-size: 0.95em; }
+    .lib-item-date { font-size: 0.75em; color: #777; }
+    .lib-actions { display: flex; gap: 6px; }
+
+    /* Crystal List */
+    .crystal-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .crystal-item { background: rgba(255,255,255,0.02); padding: 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+    .crystal-header { display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px; }
+    .crystal-content { font-size: 0.9em; color: #ddd; white-space: pre-wrap; max-height: 100px; overflow-y: auto; }
+
+    /* Animations */
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes clickPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.8; } }
+
+    /* --- MANTRA CSS --- */
+    #mantra-toggle {
+      position: fixed !important;
+      left: 50% !important; transform: translateX(-50%) translateY(0) !important;
+      bottom: 28px !important; z-index: 100000 !important;
+      min-width: var(--mantra-min-w) !important;
+      padding: var(--mantra-padding) !important;
+      border-radius: var(--mantra-radius) !important;
+      display: flex; gap: 12px; align-items: center; justify-content: center;
+      cursor: pointer !important; user-select: none !important;
+      background: var(--mantra-grad) !important;
+      border: 1px solid rgba(255,255,255,0.06) !important;
+      box-shadow: var(--mantra-glow) !important;
+      backdrop-filter: blur(10px) saturate(120%) !important;
+      transition: transform 0.55s cubic-bezier(.16,1,.3,1), box-shadow 0.55s, background 0.55s !important;
+      color: var(--mantra-text) !important; outline: none;
+    }
+    #mantra-hint { font-size: 14px; opacity: 0.7; transform: translateY(1px); }
+    #mantra-text { font-size: 0.86rem; color: var(--mantra-text); line-height: 1; font-style: italic; text-align: center; white-space: nowrap; transition: all 0.35s ease; }
+    
+    #mantra-toggle:hover { transform: translateX(-50%) translateY(-3px) !important; box-shadow: 0 18px 45px rgba(0,255,255,0.09) !important; border-color: rgba(255,255,255,0.14) !important; }
+    #mantra-toggle:active { transform: translateX(-50%) translateY(0) !important; }
+    
+    #mantra-toggle.collapsed {
+      --mantra-grad: linear-gradient(90deg, rgba(255,215,0,0.12), rgba(255,120,0,0.06));
+      border-color: rgba(255,215,0,0.26) !important;
+      box-shadow: 0 0 28px rgba(255,215,0,0.08) !important;
+      padding: 10px 44px !important;
+    }
+    #mantra-toggle.collapsed #mantra-text { font-weight: 700; letter-spacing: 3px; color: var(--mantra-accent); text-shadow: 0 0 8px rgba(255,215,0,0.18); font-style: normal; }
+    
+    /* Mantra Settings Panel */
+    #mantra-settings-panel {
+      position: fixed; z-index: 200001; left: 50%; transform: translateX(-50%); bottom: 86px;
+      min-width: 320px; max-width: 420px; width: clamp(320px, 42vw, 420px);
+      background: linear-gradient(180deg, rgba(12,12,12,0.92), rgba(18,18,18,0.96));
+      border-radius: 12px; padding: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.04);
+      backdrop-filter: blur(8px); display: none; flex-direction: column; gap: 10px;
+    }
+    #mantra-settings-panel.active { display: flex; animation: fadePanel .28s cubic-bezier(.2,.9,.35,1); }
+    @keyframes fadePanel { from { opacity: 0; transform: translateX(-50%) translateY(10px) } to { opacity: 1; transform: translateX(-50%) translateY(0) } }
+
+    .mantra-row { display: flex; gap: 8px; align-items: center; }
+    .mantra-col { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .mantra-label { font-size: 0.78rem; color: #9bb; }
+    .mantra-input, .mantra-select { background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04); color: #eaf6ff; padding: 8px; border-radius: 8px; font-size: 0.9rem; outline: none; width: 100%; }
+    .mantra-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 6px; }
+    .mantra-btn { padding: 8px 10px; border-radius: 8px; border: none; cursor: pointer; font-weight: 700; font-size: 0.9rem; }
+    .mantra-btn.prim { background: linear-gradient(90deg, #0ff, #8a2be2); color: #001; }
+    .mantra-btn.sec { background: rgba(255,255,255,0.04); color: #dfe; }
+    
+    /* Mantra Dashboard */
+    #mantra-dashboard {
+      position: fixed; inset: 0; display: none; z-index: 200005; align-items: center; justify-content: center;
+      background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.8)); backdrop-filter: blur(5px);
+    }
+    #mantra-dashboard.active { display: flex; }
+    #mantra-dashboard .dash-box { width: 92%; max-width: 980px; max-height: 86vh; overflow: auto; border-radius: 12px; padding: 16px; background: linear-gradient(180deg, #0b0b0b, #121212); border: 1px solid rgba(255,255,255,0.04); box-shadow: 0 30px 80px rgba(0,0,0,0.7); }
+    .dash-item { padding: 10px; border-radius: 8px; background: rgba(255,255,255,0.02); display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; margin-bottom: 6px; }
+    .dash-actions button { padding: 4px 8px; background: rgba(255,255,255,0.1); border: none; border-radius: 4px; color: #fff; cursor: pointer; margin-left: 4px; }
+
+    /* Media Queries */
+    @media (max-width: 640px) {
+      .box { max-width: 95%; }
+      .top-info { flex-direction: column; gap: 4px; }
+      .svg-container { width: 120px; height: 120px; }
+      .input-container { bottom: 85px; } /* Mobile adjust */
+      #mantra-toggle { min-width: 220px; padding: 10px 18px; }
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="particles-js"><canvas class="particles-js-canvas-el"></canvas></div>
+
+  <div class="svg-container">
+    <object data="3D_logo_Dual_Infodose_9.svg" type="image/svg+xml">
+       <div class="svg-fallback">Dual Logo</div>
+    </object>
+  </div>
+
+  <div class="top-info" id="topInfo">
+    <span id="displayUser">User: —</span>
+    <span id="displayInfodose">Infodose: —</span>
+    <span id="displayActiveTraining" style="color:var(--success); font-weight:bold; font-size:0.8em; margin-top:2px"></span>
+  </div>
+
+  <div class="response-container" id="response">
+    <div class="page initial active">
+      <strong>Clique no ◉ e diga “Oi, Dual”.</strong><br>
+      <em>Sempre único. Sempre seu.</em>
+    </div>
+
+    <div class="response-controls">
+      <div class="control-buttons">
+        <button class="control-btn copy-button" title="Copiar tudo">
+          <svg viewBox="0 0 24 24" width="20"><circle cx="12" cy="12" r="10"></circle><rect x="6" y="6" width="12" height="12"></rect></svg>
+        </button>
+        <button class="control-btn paste-button" title="Colar">
+          <svg viewBox="0 0 24 24" width="20"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="4" x2="12" y2="20"></line></svg>
+        </button>
+
+        <button id="toggleBtn" class="control-btn toggle-button" title="Painel Infodose & Biblioteca">
+          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="10" stroke-width="2"></circle><circle cx="12" cy="12" r="3"></circle></svg>
+        </button>
+
+        <button id="crystalBtn" class="control-btn" title="Cristalizados (Memória)">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M12 2l2.9 6.3L21 10l-5 3.6L17.8 21 12 17.7 6.2 21 7 13.6 2 10l6.1-1.7L12 2z"></path></svg>
+        </button>
+
+        <button id="settingsBtn" class="control-btn" title="Configurações API">
+          <svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        </button>
+      </div>
+
+      <div class="pagination">
+        <button data-action="prev">⟵</button>
+        <span id="pageIndicator">1 / 1</span>
+        <button data-action="next">⟶</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="input-container">
+    <input id="userInput" type="text" placeholder="Diga: 'oi, Dual'...">
+    <button id="sendBtn" title="Enviar">➤</button>
+    <button id="voiceBtn" title="Falar">
+      <object data="Reset_buttom_Dual-Infodose.svg" type="image/svg+xml" width="30" height="30" style="pointer-events: none;">
+        <span>🎤</span>
+      </object>
+    </button>
+  </div>
+
+  <div id="settingsModal" class="modal">
+    <div class="box">
+      <h3>Configuração Neural (API)</h3>
+      <div class="col">
+        <div class="input-group">
+          <label>OpenRouter API Key (SK)</label>
+          <input type="password" id="apiKeyInput" placeholder="sk-or-..." autocomplete="off">
+        </div>
+        <div class="input-group">
+          <label>Modelo AI</label>
+          <input type="text" id="modelInput" placeholder="ex: meta-llama/llama-4-maverick:free">
+        </div>
+        <div class="settings-actions">
+          <button id="cancelSettings" class="btn btn-sec">Cancelar</button>
+          <button id="saveSettings" class="btn btn-prim">Salvar Conexão</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="togglePanel" class="panel">
+    <div class="box">
+      <h3>Painel Infodose</h3>
+      
+      <div style="padding-bottom:15px; border-bottom:1px solid rgba(255,255,255,0.1)">
+        <div class="row">
+          <div style="flex:1" class="col">
+            <label class="small">Usuário</label>
+            <input type="text" id="userNameInput" placeholder="Seu nome..." />
+          </div>
+          <div style="flex:1" class="col">
+            <label class="small">Nome da Infodose</label>
+            <input type="text" id="infodoseNameInput" placeholder="Ex: World System — Alpha" />
+          </div>
+        </div>
+        <div style="margin-top:10px; display:flex; gap:15px; align-items:center;">
+          <div style="display:flex;align-items:center;gap:6px">
+             <input type="checkbox" id="assistantActiveCheckbox" />
+             <label for="assistantActiveCheckbox" class="small">Infodose ativa</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+             <input type="checkbox" id="trainingActiveCheckbox" />
+             <label for="trainingActiveCheckbox" class="small">Treinamento ativo</label>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:15px;">
+        <h4 style="color:#ddd; margin-bottom:8px">Biblioteca de Treinamentos (World System)</h4>
+        
+        <div class="col" style="background:rgba(255,255,255,0.03); padding:10px; border-radius:8px">
+          <label class="small">Adicionar novo arquivo (.txt)</label>
+          <div style="display:flex; gap:8px">
+            <input type="file" id="trainingUpload" accept=".txt" style="flex:1" />
+            <button id="importTrainingBtn" class="btn btn-prim">Importar</button>
+          </div>
+        </div>
+
+        <div id="trainingLibList" class="lib-list">
+          <div class="small" style="text-align:center; padding:10px">Nenhum treinamento salvo.</div>
+        </div>
+      </div>
+
+      <div class="settings-actions">
+        <button id="savePanelBtn" class="btn btn-prim">Salvar & Fechar</button>
+        <button id="closePanelBtn" class="btn btn-sec">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="crystalModal" class="modal">
+    <div class="box">
+      <h3>Cristalizados (Memória Permanente)</h3>
+      <div class="row" style="margin-bottom:12px">
+        <button id="exportAllCrystal" class="btn btn-prim" style="flex:1">Exportar todos (.txt)</button>
+        <button id="clearAllCrystal" class="btn btn-danger" style="flex:1">Limpar tudo</button>
+      </div>
+      <div class="crystal-list" id="crystalList"></div>
+      <div class="settings-actions">
+        <button id="closeCrystal" class="btn btn-sec">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mantra-toggle" aria-label="Mantra toggle" role="button" tabindex="0" title="Mantra — clique / pressione longa para ajustes">
+    <span id="mantra-text">Do seu jeito. <strong>Sempre</strong> único. <strong>Sempre</strong> seu.</span>
+    <span id="mantra-hint" aria-hidden="true">⚙︎</span>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
+  
+  <script>
+    /* ---------- MANTRA LOGIC (Integrated) ---------- */
+    document.addEventListener('DOMContentLoaded', function () {
+      const MANTRA = document.getElementById('mantra-toggle');
+      const TXT = document.getElementById('mantra-text');
+
+      if (!MANTRA || !TXT) { console.error('Mantra UI not found'); return; }
+
+      const DEFAULTS = {
+        gradient: 'linear-gradient(135deg, rgba(0,255,255,0.12), rgba(120,0,255,0.08))',
+        glow: '0 10px 30px rgba(0,255,255,0.06)',
+        minWidth: '260px',
+        padding: '12px 28px',
+        radius: '100px',
+        haptics: true,
+        position: 'bottom-center'
+      };
+
+      let settings = DEFAULTS;
+      try {
+        const raw = localStorage.getItem('mantra_settings');
+        if(raw) settings = Object.assign({}, DEFAULTS, JSON.parse(raw));
+      } catch(e) {}
+
+      function saveSettings() { localStorage.setItem('mantra_settings', JSON.stringify(settings)); }
+
+      function applyVisuals() {
+        MANTRA.style.background = settings.gradient;
+        MANTRA.style.boxShadow = settings.glow;
+        MANTRA.style.minWidth = settings.minWidth;
+        MANTRA.style.padding = settings.padding;
+        MANTRA.style.borderRadius = settings.radius;
+        MANTRA.style.left = '50%';
+        MANTRA.style.transform = 'translateX(-50%)';
+        MANTRA.style.right = 'auto';
+        MANTRA.style.bottom = '28px';
+        if (settings.position === 'bottom-left') {
+          MANTRA.style.left = '24px'; MANTRA.style.transform = 'none';
+        } else if (settings.position === 'bottom-right') {
+          MANTRA.style.left = 'auto'; MANTRA.style.right = '24px'; MANTRA.style.transform = 'none';
+        }
+      }
+      applyVisuals();
+
+      function haptic(pattern) {
+        if (!settings.haptics) return;
+        try { if (navigator.vibrate) navigator.vibrate(pattern || 20); } catch (e) {}
+      }
+
+      let collapsed = false;
+      MANTRA.addEventListener('click', () => {
+        if (MANTRA._suppressClick) { MANTRA._suppressClick = false; return; }
+        collapsed = !collapsed;
+        MANTRA.classList.toggle('collapsed', collapsed);
+        swapText(collapsed ? 'USE · TRANSFORME · DEVOLVA' : 'Do seu jeito. <strong>Sempre</strong> único. <strong>Sempre</strong> seu.');
+        haptic(18);
+      });
+
+      function swapText(html) {
+        TXT.style.opacity = '0';
+        setTimeout(() => {
+          TXT.innerHTML = html;
+          TXT.style.opacity = '1';
+        }, 300);
+      }
+
+      /* Long Press Settings */
+      let longPressTimer = null;
+      MANTRA.addEventListener('pointerdown', () => {
+        MANTRA.style.transform = (settings.position === 'bottom-center') ? 'translateX(-50%) scale(0.98)' : 'scale(0.98)';
+        longPressTimer = setTimeout(() => {
+          MANTRA._suppressClick = true;
+          openSettingsPanel();
+          haptic([35, 15, 35]);
+        }, 600);
+      });
+      const cancelPress = () => {
+        if (longPressTimer) clearTimeout(longPressTimer);
+        applyVisuals(); // Reset transform
+      };
+      MANTRA.addEventListener('pointerup', cancelPress);
+      MANTRA.addEventListener('pointercancel', cancelPress);
+
+      /* Settings Panel Creation */
+      let panel = document.createElement('div');
+      panel.id = 'mantra-settings-panel';
+      panel.innerHTML = `
+        <div class="mantra-row"><div class="mantra-col"><div class="mantra-label">Visual Preset</div>
+          <select id="mantra-grad-presets" class="mantra-select">
+            <option value="preset-1">Ciano (Padrão)</option><option value="preset-2">Zen (Dourado)</option><option value="preset-3">Elétrico (Roxo)</option><option value="custom">Custom</option>
+          </select></div></div>
+        <div class="mantra-row"><div class="mantra-col"><div class="mantra-label">Posição</div>
+          <select id="mantra-position" class="mantra-select"><option value="bottom-center">Centro</option><option value="bottom-left">Esquerda</option><option value="bottom-right">Direita</option></select>
+        </div></div>
+        <div class="mantra-actions"><button id="mantra-dash-btn" class="mantra-btn sec">Dashboard</button><button id="mantra-save" class="mantra-btn prim">Salvar</button></div>
+      `;
+      document.body.appendChild(panel);
+
+      function openSettingsPanel() {
+        panel.querySelector('#mantra-position').value = settings.position;
+        panel.classList.add('active');
+        
+        // Close on click outside
+        const outside = (e) => {
+           if (!panel.contains(e.target) && e.target !== MANTRA) {
+              panel.classList.remove('active');
+              document.removeEventListener('pointerdown', outside);
+           }
+        };
+        setTimeout(() => document.addEventListener('pointerdown', outside), 100);
+      }
+
+      panel.querySelector('#mantra-save').addEventListener('click', () => {
+        const pre = panel.querySelector('#mantra-grad-presets').value;
+        if(pre === 'preset-1') settings.gradient = DEFAULTS.gradient;
+        if(pre === 'preset-2') settings.gradient = 'linear-gradient(135deg, rgba(255,215,0,0.12), rgba(255,150,40,0.06))';
+        if(pre === 'preset-3') settings.gradient = 'linear-gradient(135deg, rgba(138,43,226,0.16), rgba(58,12,160,0.06))';
+        
+        settings.position = panel.querySelector('#mantra-position').value;
+        saveSettings(); applyVisuals();
+        panel.classList.remove('active');
+      });
+
+      // Simple Dashboard Trigger
+      panel.querySelector('#mantra-dash-btn').addEventListener('click', () => {
+         ensureDashboardOverlay().classList.add('active');
+         populateDashboard();
+         panel.classList.remove('active');
+      });
+      
+      /* Dashboard Logic */
+      let dashOverlay;
+      function ensureDashboardOverlay() {
+        if (dashOverlay) return dashOverlay;
+        dashOverlay = document.createElement('div');
+        dashOverlay.id = 'mantra-dashboard';
+        dashOverlay.innerHTML = `
+          <div class="dash-box">
+            <div style="display:flex;justify-content:space-between;margin-bottom:15px"><strong>Dashboard Interno</strong><button id="close-dash" style="background:none;border:none;color:#fff;font-size:1.2em">✕</button></div>
+            <div id="dash-content"></div>
+          </div>`;
+        document.body.appendChild(dashOverlay);
+        dashOverlay.querySelector('#close-dash').onclick = () => dashOverlay.classList.remove('active');
+        return dashOverlay;
+      }
+      
+      function populateDashboard() {
+        const c = dashOverlay.querySelector('#dash-content');
+        c.innerHTML = '<div style="color:#888">Varrendo LocalStorage e IndexedDB...</div>';
+        
+        let html = '';
+        Object.keys(localStorage).forEach(k => {
+           if(k.startsWith('di_') || k.includes('mantra')) {
+              let v = localStorage.getItem(k);
+              if(v.length > 50) v = v.substring(0,50) + '...';
+              html += `<div class="dash-item"><span>${k}</span><span style="color:#aaa">${v}</span></div>`;
+           }
+        });
+        c.innerHTML = html || 'Nada encontrado.';
+      }
+    });
+
+    /* ---------- MAIN APP LOGIC ---------- */
+    const API_ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
+    const TRAINING_FILE_DEFAULT_NAME = 'Super_Treinamento_Universal.txt';
+    
+    // State
+    let apiKey = localStorage.getItem('di_apiKey') || '';
+    let modelName = localStorage.getItem('di_modelName') || 'meta-llama/llama-4-maverick:free';
+    let userName = localStorage.getItem('di_userName') || '';
+    let infodoseName = localStorage.getItem('di_infodoseName') || '';
+    let assistantEnabled = (localStorage.getItem('di_assistantEnabled') === '1');
+    let trainingActive = (localStorage.getItem('di_trainingActive') !== '0');
+    let trainingText = localStorage.getItem('di_trainingText') || '';
+    let trainingActiveName = localStorage.getItem('di_trainingActiveName') || 'Nenhum';
+    
+    let trainingLibrary = [];
+    try {
+       trainingLibrary = JSON.parse(localStorage.getItem('di_trainingLibrary') || '[]');
+    } catch(e) { console.error('Lib Parse Error', e); }
+
+    let conversation = [];
+    let pages = [], currentPage = 0;
+    const CRYSTAL_KEY = 'di_cristalizados';
+
+    // Helper: Element Creation
+    const createEl = (tag, cls, html) => { 
+      const e = document.createElement(tag); 
+      if (cls) e.className = cls; 
+      if (html) e.innerHTML = html; 
+      return e; 
+    };
+
+    // Text Splitter
+    const splitBlocks = text => {
+      if (!text || !text.trim()) return [['...','','']];
+      let paras = text.split(/\n\s*\n/).filter(p=>p.trim());
+      if (paras.length === 1 && text.length > 200) {
+        paras = text.match(/[^\.!\?]+[\.!\?]+/g) || [text];
+        paras = paras.map(s=>s.trim());
+      }
+      const groups = [];
+      for (let i=0;i<paras.length;i+=3) {
+        let chunk = paras.slice(i, i+3);
+        while(chunk.length < 3) chunk.push('...');
+        groups.push(chunk);
+      }
+      return groups;
+    };
+
+    const speakText = (txt) => {
+      speechSynthesis.cancel();
+      if (!txt) return;
+      const u = new SpeechSynthesisUtterance(txt);
+      u.lang = 'pt-BR'; u.rate = 1.0;
+      speechSynthesis.speak(u);
+    };
+
+    const updateTopInfo = () => {
+      document.getElementById('displayUser').innerText = 'User: ' + (userName || '—');
+      document.getElementById('displayInfodose').innerText = 'Infodose: ' + (infodoseName || '—');
+      const trDisplay = document.getElementById('displayActiveTraining');
+      if (trainingActive && trainingActiveName !== 'Nenhum') {
+         trDisplay.innerText = 'Treino: ' + trainingActiveName;
+         trDisplay.style.display = 'block';
+      } else {
+         trDisplay.style.display = 'none';
+      }
+    };
+
+    const updateToggleUI = () => {
+      document.getElementById('toggleBtn').classList.toggle('active', assistantEnabled);
+      document.getElementById('assistantActiveCheckbox').checked = assistantEnabled;
+      document.getElementById('trainingActiveCheckbox').checked = trainingActive;
+    };
+
+    const isCrystalized = (text) => {
+      try {
+        const list = JSON.parse(localStorage.getItem(CRYSTAL_KEY) || '[]');
+        return list.some(item => item.content === text);
+      } catch(e) { return false; }
+    };
+
+    // Rendering Response
+    const renderPaginatedResponse = text => {
+      const respEl = document.getElementById('response');
+      respEl.querySelectorAll('.page:not(.initial)').forEach(p=>p.remove());
+      pages = [];
+      
+      const groups = splitBlocks(text);
+      const controls = respEl.querySelector('.response-controls');
+      const titles = ['🎁 Recompensa Inicial','👁️ Exploração','⚡ Vibração'];
+
+      groups.forEach((tris, gi) => {
+        const page = createEl('div', gi===0?'page active':'page');
+        tris.forEach((body, j) => {
+          const cls = j===0?'intro': j===1?'middle':'ending';
+          const b = createEl('div','response-block '+cls);
+          b.innerHTML = `<h3>${titles[j]||'Insight'}</h3><p>${body}</p>`;
+          
+          // Crystal Btn
+          const meta = createEl('div','meta');
+          const crystalBtn = createEl('button','crystal-btn','✶');
+          if (isCrystalized(body)) {
+             crystalBtn.innerText = '✓'; crystalBtn.classList.add('saved');
+          } else {
+             crystalBtn.onclick = (ev) => {
+               ev.stopPropagation();
+               if (crystalBtn.classList.contains('saved')) return;
+               cristalizar({ title: titles[j], content: body });
+               crystalBtn.innerText = '✓'; crystalBtn.classList.add('saved');
+             };
+          }
+          meta.appendChild(crystalBtn);
+          b.appendChild(meta);
+
+          // Click to Speak/Expand
+          b.addEventListener('click', (e) => {
+            if(e.target.closest('.meta')) return;
+            if (!b.classList.contains('clicked')) {
+              speakText(body); b.classList.add('clicked');
+            } else {
+              // Re-prompt logic
+              showLoading('Expandindo pulso...');
+              conversation.push({ role:'user', content: `Expanda: ${body}` });
+              callAI();
+            }
+          });
+          page.appendChild(b);
+        });
+        
+        page.appendChild(createEl('p','footer-text',`<em>Do seu jeito. Sempre único.</em>`));
+        respEl.insertBefore(page, controls);
+        pages.push(page);
+      });
+
+      currentPage = 0;
+      document.getElementById('pageIndicator').textContent = `1 / ${pages.length}`;
+      if(pages.length > 0) speakText(groups[0][0]);
+    };
+
+    const changePage = offset => {
+      const np = currentPage + offset;
+      if (np<0||np>=pages.length) return;
+      pages[currentPage].classList.remove('active');
+      pages[np].classList.add('active');
+      currentPage = np;
+      document.getElementById('pageIndicator').textContent = `${currentPage+1} / ${pages.length}`;
+      // Speak first block of new page
+      const firstP = pages[np].querySelector('p');
+      if(firstP) speakText(firstP.innerText);
+    };
+
+    const showLoading = msg => {
+      const respEl = document.getElementById('response');
+      respEl.querySelectorAll('.page:not(.initial)').forEach(p=>p.remove());
+      const page = createEl('div','page active');
+      page.innerHTML = `<div style="text-align:center; padding:20px; color:var(--accent)">${msg}</div>`;
+      respEl.insertBefore(page, respEl.querySelector('.response-controls'));
+      pages = [page];
+      document.getElementById('pageIndicator').textContent = '...';
+    };
+
+    // AI Call
+    async function callAI() {
+      if (!apiKey) {
+        alert('API Key não configurada.');
+        document.getElementById('settingsModal').classList.add('active');
+        return;
+      }
+      
+      // Prepare messages
+      let finalMsgs = conversation.filter(m => m.role !== 'system');
+      if (assistantEnabled && trainingActive && trainingText) {
+         finalMsgs.unshift({ role: 'system', content: trainingText });
+      }
+
+      try {
+        const resp = await fetch(API_ENDPOINT, {
+          method:'POST',
+          headers:{ 'Authorization':`Bearer ${apiKey}`, 'Content-Type':'application/json' },
+          body: JSON.stringify({ model: modelName, messages: finalMsgs, temperature: 0.3 })
+        });
+        
+        if (!resp.ok) throw new Error('API Error ' + resp.status);
+        const data = await resp.json();
+        const answer = data.choices?.[0]?.message?.content || 'Sem resposta.';
+        
+        conversation.push({ role:'assistant', content: answer });
+        renderPaginatedResponse(answer);
+      } catch (err) {
+        renderPaginatedResponse('Erro de conexão ou API Key inválida.\n' + err.message);
+      }
+    }
+
+    // Handlers
+    function sendMessage(){
+      const input = document.getElementById('userInput');
+      const txt = input.value.trim();
+      if (!txt) return;
+      input.value = '';
+      
+      const init = document.querySelector('.page.initial');
+      if(init) init.remove();
+
+      if(txt.toLowerCase().includes('oi dual')) {
+         assistantEnabled = true; localStorage.setItem('di_assistantEnabled','1');
+         updateToggleUI();
+      }
+
+      showLoading('Processando...');
+      conversation.push({ role:'user', content: txt });
+      callAI();
+    }
+
+    function setupUI() {
+      // API Settings
+      document.getElementById('settingsBtn').onclick = () => {
+         document.getElementById('apiKeyInput').value = apiKey;
+         document.getElementById('modelInput').value = modelName;
+         document.getElementById('settingsModal').classList.add('active');
+      };
+      document.getElementById('saveSettings').onclick = () => {
+         apiKey = document.getElementById('apiKeyInput').value.trim();
+         modelName = document.getElementById('modelInput').value.trim();
+         localStorage.setItem('di_apiKey', apiKey);
+         localStorage.setItem('di_modelName', modelName);
+         document.getElementById('settingsModal').classList.remove('active');
+      };
+      document.getElementById('cancelSettings').onclick = () => document.getElementById('settingsModal').classList.remove('active');
+
+      // Main Panel
+      document.getElementById('toggleBtn').onclick = () => {
+         document.getElementById('userNameInput').value = userName;
+         document.getElementById('infodoseNameInput').value = infodoseName;
+         renderTrainingLib();
+         document.getElementById('togglePanel').classList.add('active');
+      };
+      document.getElementById('closePanelBtn').onclick = () => document.getElementById('togglePanel').classList.remove('active');
+      document.getElementById('savePanelBtn').onclick = () => {
+         userName = document.getElementById('userNameInput').value;
+         infodoseName = document.getElementById('infodoseNameInput').value;
+         assistantEnabled = document.getElementById('assistantActiveCheckbox').checked;
+         trainingActive = document.getElementById('trainingActiveCheckbox').checked;
+         
+         localStorage.setItem('di_userName', userName);
+         localStorage.setItem('di_infodoseName', infodoseName);
+         localStorage.setItem('di_assistantEnabled', assistantEnabled?'1':'0');
+         localStorage.setItem('di_trainingActive', trainingActive?'1':'0');
+         
+         updateTopInfo(); updateToggleUI();
+         document.getElementById('togglePanel').classList.remove('active');
+      };
+      
+      // Import Training
+      document.getElementById('importTrainingBtn').onclick = () => {
+         const f = document.getElementById('trainingUpload').files[0];
+         if(!f) return;
+         const reader = new FileReader();
+         reader.onload = (e) => {
+            const name = prompt('Nome do Treinamento:', f.name) || f.name;
+            const newItem = { id:Date.now(), name:name, content:e.target.result, date:new Date().toISOString() };
+            trainingLibrary.push(newItem);
+            localStorage.setItem('di_trainingLibrary', JSON.stringify(trainingLibrary));
+            
+            // Auto activate
+            trainingText = newItem.content;
+            trainingActiveName = newItem.name;
+            localStorage.setItem('di_trainingText', trainingText);
+            localStorage.setItem('di_trainingActiveName', trainingActiveName);
+            renderTrainingLib();
+            updateTopInfo();
+         };
+         reader.readAsText(f);
+      };
+    }
+
+    function renderTrainingLib() {
+       const el = document.getElementById('trainingLibList');
+       el.innerHTML = '';
+       if(!trainingLibrary.length) { el.innerHTML='<div class="small" style="text-align:center">Vazio</div>'; return; }
+       
+       trainingLibrary.forEach(t => {
+          const d = createEl('div','lib-item');
+          if(t.name === trainingActiveName) d.classList.add('active-training');
+          d.innerHTML = `
+            <div class="lib-item-info"><span class="lib-item-name">${t.name}</span></div>
+            <div class="lib-actions">
+               <button class="btn btn-sec btn-act">Ativar</button>
+               <button class="btn btn-danger btn-del">X</button>
+            </div>`;
+          
+          d.querySelector('.btn-act').onclick = () => {
+             trainingText = t.content; trainingActiveName = t.name; trainingActive = true;
+             localStorage.setItem('di_trainingText', t.content);
+             localStorage.setItem('di_trainingActiveName', t.name);
+             localStorage.setItem('di_trainingActive', '1');
+             renderTrainingLib(); updateTopInfo();
+          };
+          d.querySelector('.btn-del').onclick = () => {
+             if(!confirm('Deletar?')) return;
+             trainingLibrary = trainingLibrary.filter(x => x.id !== t.id);
+             localStorage.setItem('di_trainingLibrary', JSON.stringify(trainingLibrary));
+             renderTrainingLib();
+          };
+          el.appendChild(d);
+       });
+    }
+
+    // Crystal Logic
+    function cristalizar(obj) {
+       let list = [];
+       try { list = JSON.parse(localStorage.getItem(CRYSTAL_KEY)||'[]'); } catch(e){}
+       list.unshift({ ...obj, id:Date.now(), at:new Date().toISOString() });
+       localStorage.setItem(CRYSTAL_KEY, JSON.stringify(list));
+    }
+    
+    document.getElementById('crystalBtn').onclick = () => {
+       const el = document.getElementById('crystalList');
+       el.innerHTML = '';
+       let list = [];
+       try { list = JSON.parse(localStorage.getItem(CRYSTAL_KEY)||'[]'); } catch(e){}
+       
+       if(!list.length) el.innerHTML = '<div class="small">Sem memórias.</div>';
+       else list.forEach(i => {
+          const item = createEl('div','crystal-item');
+          item.innerHTML = `<div class="crystal-header"><strong>${i.title}</strong></div><div class="crystal-content">${i.content}</div>`;
+          el.appendChild(item);
+       });
+       document.getElementById('crystalModal').classList.add('active');
+    };
+    document.getElementById('closeCrystal').onclick = () => document.getElementById('crystalModal').classList.remove('active');
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+       particlesJS('particles-js', {
+          particles: { number:{value:40}, color:{value:'#0ff'}, opacity:{value:0.3}, size:{value:2}, move:{enable:true, speed:1} }
+       });
+       setupUI();
+       updateTopInfo();
+       updateToggleUI();
+       
+       document.getElementById('sendBtn').onclick = sendMessage;
+       document.getElementById('userInput').onkeypress = (e) => { if(e.key==='Enter') sendMessage(); };
+       
+       document.querySelector('[data-action="prev"]').onclick = () => changePage(-1);
+       document.querySelector('[data-action="next"]').onclick = () => changePage(1);
+    });
+  </script>
+</body>
+</html>
